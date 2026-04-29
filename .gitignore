@@ -1,0 +1,13 @@
+# Ignore plots and data files
+*.csv
+plots/
+
+# Binaries and build artifacts
+build/
+*.o
+*.out
+*.exe
+
+
+# IDE and editor files
+.vscode/
