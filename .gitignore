@@ -1,6 +1,7 @@
 # Ignore plots and data files
 *.csv
 plots/
+*.png
 
 # Binaries and build artifacts
 build/
