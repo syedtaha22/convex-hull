@@ -2,7 +2,7 @@
  * @file graham_scan.hpp
  * Implementation of the Graham Scan algorithm for convex hull computation.
  *
- * @date 29th April, 2024
+ * @date 29th April, 2026
  * @author Syed Taha
  */
 
