@@ -22,6 +22,7 @@
 
  // Include the convex hull algorithms
 #include "include/graham_scan.hpp"
+#include "include/andrews_algo.hpp"
 #include "include/gift_wrapping.hpp" 
 
 #define OUTPUT_DIR "output/"
@@ -119,6 +120,7 @@ int main() {
     // Function table: (name, function pointer)
     std::vector<std::pair<std::string, ConvexHullAlgorithm>> functions = {
         {"Graham Scan", graham_scan_convex_hull},
+        {"Andrews Algo", andrews_convex_hull}, 
         {"Gift Wrapping", gift_wrapping_convex_hull},
         // Add other algos here
     };
