@@ -4,7 +4,7 @@ plots/
 *.png
 
 # Binaries and build artifacts
-build/
+bin/
 *.o
 *.out
 *.exe
