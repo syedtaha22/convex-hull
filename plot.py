@@ -44,8 +44,8 @@ for idx, csv_file in enumerate(sorted(csv_files)):
     
     print(f"  Plotting: {algo_name}")
     
-    # Plot
-    ax.plot(df['PointCount'], df['AvgTime_ms'], 
+    # Plot CPU clock time
+    ax.plot(df['PointCount'], df['AvgCPU_ms'], 
             marker='o', label=algo_name,
             linewidth=1.5, markersize=2, color=colors[idx], alpha=0.8)
 
