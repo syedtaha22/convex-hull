@@ -27,7 +27,7 @@
 #include "include/gift_wrapping.hpp" 
 
 #define OUTPUT_DIR "output/"
-#define MAX_N 10000
+#define MAX_N 50000
 #define NUM_RUNS 100
 
 // Define a type for convex hull algorithm functions
@@ -67,7 +67,7 @@ void benchmark_algorithm(const std::string& name, ConvexHullAlgorithm algo, int 
     PGEN generator(DATASET_TYPE::COLLINEAR);
 
     // Loop from 0 to max_n
-    for (int n = 0; n <= max_n; n += 1) {
+    for (int n = 0; n <= max_n; n += 500) {
         double total_cpu_ms = 0.0;
         double total_wall_ms = 0.0;
 
@@ -101,7 +101,7 @@ void benchmark_algorithm(const std::string& name, ConvexHullAlgorithm algo, int 
         // Write to CSV
         csv_file << n << "," << std::fixed << std::setprecision(6) << avg_cpu_ms << "," << avg_wall_ms << "\n";
 
-        std::cout << "  " << n << " points: CPU " << std::fixed << std::setprecision(4) << avg_cpu_ms << " ms, Wall " << avg_wall_ms << " ms\n";
+        std::cout << "  " << n << " points: CPU " << std::fixed << std::setprecision(4) << avg_cpu_ms << " ms, Wall " << avg_wall_ms << " ms\r";
         std::cout.flush();
 
     }
@@ -119,8 +119,8 @@ int main() {
 
     // Function table: (name, function pointer)
     std::vector<std::pair<std::string, ConvexHullAlgorithm>> functions = {
-        // {"Graham Scan", graham_scan_convex_hull},
-        // {"Andrews Algo", andrews_convex_hull}, 
+        {"Graham Scan", graham_scan_convex_hull},
+        {"Andrews Algo", andrews_convex_hull}, 
         {"Gift Wrapping", gift_wrapping_convex_hull},
         // Add other algos here
     };
