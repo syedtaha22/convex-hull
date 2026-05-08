@@ -28,7 +28,7 @@
  * @param points Input vector of points
  * @return Vector of points forming the convex hull in counterclockwise order
  */
-std::vector<Point> gift_wrapping_convex_hull(std::vector<Point> points) {
+std::vector<Point> gift_wrapping_convex_hull(std::vector<Point>& points) {
     const int n = points.size();
     if (n <= 3) {
         // For 3 or fewer points, return them as-is 

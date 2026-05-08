@@ -14,6 +14,7 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
+#include <time.h>
 #include <fstream>
 #include <random>
 #include <functional>
@@ -32,7 +33,9 @@
 // Define a type for convex hull algorithm functions
 // This allows us to easily pass different algorithms to the benchmarking function
 // Otherwise had to write long data type every time. (Eww)
-typedef std::function<std::vector<Point>(std::vector<Point>)> ConvexHullAlgorithm;
+// Use a non-const reference parameter so the benchmark can copy inputs outside
+// the timed region and measure only the algorithm work.
+typedef std::function<std::vector<Point>(std::vector<Point>&)> ConvexHullAlgorithm;
 
 /**
  * @brief Generate random points in a 2D plane
@@ -45,6 +48,17 @@ std::vector<Point> generate_random_points(int count) {
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(-10000.0, 10000.0);
 
+    for (int i = 0; i < count; i++) {
+        points.emplace_back(dis(gen), dis(gen));
+    }
+    return points;
+}
+
+// Deterministic generation helper using caller-provided RNG (so we can fix seed)
+std::vector<Point> generate_random_points_with_gen(int count, std::mt19937 &gen) {
+    std::vector<Point> points;
+    points.reserve(count);
+    std::uniform_real_distribution<> dis(-10000.0, 10000.0);
     for (int i = 0; i < count; i++) {
         points.emplace_back(dis(gen), dis(gen));
     }
@@ -76,32 +90,52 @@ void benchmark_algorithm(const std::string& name, ConvexHullAlgorithm algo, int 
     // Open CSV file for this algorithm
     std::string csv_filename = get_csv_filename(name);
     std::ofstream csv_file(csv_filename);
-    csv_file << "PointCount,AvgTime_ms\n";
+    csv_file << "PointCount,AvgCPU_ms,AvgWall_ms\n";
 
     // Loop from 1 to max_n
     for (int n = 1; n <= max_n; n++) {
-        double total_time_ms = 0.0f;
+        double total_cpu_ms = 0.0;
+        double total_wall_ms = 0.0;
+
+        // Pre-generate deterministic datasets for this n so all algorithms use identical inputs
+        std::vector<std::vector<Point>> datasets;
+        datasets.reserve(num_runs);
+        std::mt19937 gen(42 + n); // fixed seed + n to vary datasets with n but keep deterministic
+        for (int run = 0; run < num_runs; run++) {
+            datasets.push_back(generate_random_points_with_gen(n, gen));
+        }
 
         // Run the algorithm num_runs times
         for (int run = 0; run < num_runs; run++) {
-            std::vector<Point> points = generate_random_points(n);
+            // Copy dataset outside timed region so copy cost isn't included 
+            // in the algorithm timing
+            std::vector<Point> work = datasets[run];
 
-            // Measure execution time
-            auto start = std::chrono::high_resolution_clock::now();
-            std::vector<Point> hull = algo(points);
-            auto end = std::chrono::high_resolution_clock::now();
+            // Measure CPU time and wall-clock time around the algorithm
+            struct timespec start_cpu, end_cpu;
+            clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_cpu);
+            auto start_wall = std::chrono::high_resolution_clock::now();
 
-            double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
-            total_time_ms += elapsed_ms;
+            std::vector<Point> hull = algo(work);
+
+            auto end_wall = std::chrono::high_resolution_clock::now();
+            clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_cpu);
+
+            double cpu_ms = (end_cpu.tv_sec - start_cpu.tv_sec) * 1000.0 +
+                            (end_cpu.tv_nsec - start_cpu.tv_nsec) / 1e6;
+            double wall_ms = std::chrono::duration<double, std::milli>(end_wall - start_wall).count();
+
+            total_cpu_ms += cpu_ms;
+            total_wall_ms += wall_ms;
         }
 
-        double avg_time_ms = total_time_ms / num_runs;
+        double avg_cpu_ms = total_cpu_ms / num_runs;
+        double avg_wall_ms = total_wall_ms / num_runs;
 
         // Write to CSV
-        csv_file << n << "," << std::fixed << std::setprecision(6) << avg_time_ms << "\n";
+        csv_file << n << "," << std::fixed << std::setprecision(6) << avg_cpu_ms << "," << avg_wall_ms << "\n";
 
-        // Print to console every 5000 points to avoid spam
-        std::cout << "  " << n << " points: " << std::fixed << std::setprecision(4) << avg_time_ms << " ms\r";
+        std::cout << "  " << n << " points: CPU " << std::fixed << std::setprecision(4) << avg_cpu_ms << " ms, Wall " << avg_wall_ms << " ms\r";
         std::cout.flush();
 
     }
