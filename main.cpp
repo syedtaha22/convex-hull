@@ -27,7 +27,7 @@
 #include "include/gift_wrapping.hpp" 
 
 #define OUTPUT_DIR "output/"
-#define MAX_N 1000
+#define MAX_N 10000
 #define NUM_RUNS 100
 
 // Define a type for convex hull algorithm functions
@@ -36,34 +36,6 @@
 // Use a non-const reference parameter so the benchmark can copy inputs outside
 // the timed region and measure only the algorithm work.
 typedef std::function<std::vector<Point>(std::vector<Point>&)> ConvexHullAlgorithm;
-
-/**
- * @brief Generate random points in a 2D plane
- */
-std::vector<Point> generate_random_points(int count) {
-    std::vector<Point> points;
-    points.reserve(count);
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(-10000.0, 10000.0);
-
-    for (int i = 0; i < count; i++) {
-        points.emplace_back(dis(gen), dis(gen));
-    }
-    return points;
-}
-
-// Deterministic generation helper using caller-provided RNG (so we can fix seed)
-std::vector<Point> generate_random_points_with_gen(int count, std::mt19937 &gen) {
-    std::vector<Point> points;
-    points.reserve(count);
-    std::uniform_real_distribution<> dis(-10000.0, 10000.0);
-    for (int i = 0; i < count; i++) {
-        points.emplace_back(dis(gen), dis(gen));
-    }
-    return points;
-}
 
 // function to get filename
 std::string get_csv_filename(const std::string& algo_name) {
@@ -92,24 +64,18 @@ void benchmark_algorithm(const std::string& name, ConvexHullAlgorithm algo, int 
     std::ofstream csv_file(csv_filename);
     csv_file << "PointCount,AvgCPU_ms,AvgWall_ms\n";
 
-    // Loop from 1 to max_n
-    for (int n = 1; n <= max_n; n++) {
+    PGEN generator(DATASET_TYPE::COLLINEAR);
+
+    // Loop from 0 to max_n
+    for (int n = 0; n <= max_n; n += 1) {
         double total_cpu_ms = 0.0;
         double total_wall_ms = 0.0;
-
-        // Pre-generate deterministic datasets for this n so all algorithms use identical inputs
-        std::vector<std::vector<Point>> datasets;
-        datasets.reserve(num_runs);
-        std::mt19937 gen(42 + n); // fixed seed + n to vary datasets with n but keep deterministic
-        for (int run = 0; run < num_runs; run++) {
-            datasets.push_back(generate_random_points_with_gen(n, gen));
-        }
 
         // Run the algorithm num_runs times
         for (int run = 0; run < num_runs; run++) {
             // Copy dataset outside timed region so copy cost isn't included 
             // in the algorithm timing
-            std::vector<Point> work = datasets[run];
+            std::vector<Point> work = generator.get(n);
 
             // Measure CPU time and wall-clock time around the algorithm
             struct timespec start_cpu, end_cpu;
@@ -135,7 +101,7 @@ void benchmark_algorithm(const std::string& name, ConvexHullAlgorithm algo, int 
         // Write to CSV
         csv_file << n << "," << std::fixed << std::setprecision(6) << avg_cpu_ms << "," << avg_wall_ms << "\n";
 
-        std::cout << "  " << n << " points: CPU " << std::fixed << std::setprecision(4) << avg_cpu_ms << " ms, Wall " << avg_wall_ms << " ms\r";
+        std::cout << "  " << n << " points: CPU " << std::fixed << std::setprecision(4) << avg_cpu_ms << " ms, Wall " << avg_wall_ms << " ms\n";
         std::cout.flush();
 
     }
@@ -153,8 +119,8 @@ int main() {
 
     // Function table: (name, function pointer)
     std::vector<std::pair<std::string, ConvexHullAlgorithm>> functions = {
-        {"Graham Scan", graham_scan_convex_hull},
-        {"Andrews Algo", andrews_convex_hull}, 
+        // {"Graham Scan", graham_scan_convex_hull},
+        // {"Andrews Algo", andrews_convex_hull}, 
         {"Gift Wrapping", gift_wrapping_convex_hull},
         // Add other algos here
     };
