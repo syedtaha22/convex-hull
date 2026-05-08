@@ -150,6 +150,10 @@ public:
      */
     void save_to_csv(const std::string& filename) {
         std::ofstream file(filename);
+
+        // write name to first line
+        file << type_names[static_cast<std::size_t>(type)] << "\n";
+
         file << "x,y\n";
         for (const auto& point : points) {
             file << point.x << "," << point.y << "\n";
@@ -161,6 +165,9 @@ private:
      * @brief The current distribution type for point generation.
      */
     DATASET_TYPE type;
+
+    const char* type_names[5] = {"UNIFORM", "CIRCULAR", "GRID", "COLLINEAR", "RANDOM"};
+
 
     /**
      * @typedef generator_fn
@@ -243,7 +250,7 @@ private:
      * @return Vector of grid-arranged points
      */
     std::vector<Point> _grid(int count) {
-        int grid_size = static_cast<int>(std::sqrt(count)) + 1;
+        int grid_size = static_cast<int>(std::sqrt(count));
         for (int i = 0; i < grid_size && points.size() < count; i++) {
             for (int j = 0; j < grid_size && points.size() < count; j++) {
                 points.emplace_back(i * 100.0f, j * 100.0f);
